@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "997057825862",
+    "project_id": "sentidos-de5c4",
+    "storage_bucket": "sentidos-de5c4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:997057825862:android:3392acc4fa021b254b4e47",
+        "android_client_info": {
+          "package_name": "com.example.aromatizacion_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6yfbszQ1TxFtk6BfjjQ9oA1V1GvgV3WU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
