@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dashboard_screen.dart';
-import 'change_password_screen.dart'; // <- pantalla para crear/cambiar contraseña
+import 'first_time_password_screen.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final isAdmin = data['isAdmin'] as bool? ?? false;
       final departamento = data['departamento'] as String? ?? "";
 
+
       if (isAdmin) {
         // Admin requiere contraseña siempre
         if (pass != storedPass) {
@@ -63,8 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ChangePasswordScreen(
+              builder: (context) => FirstTimePasswordScreen(
                 usuarioDocId: doc.id,
+                usuario: user,
+                departamento: departamento,
               ),
             ),
           );
@@ -86,7 +90,8 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(
           builder: (context) => DashboardScreen(
             isAdmin: isAdmin,
-            usuario: departamento,
+            usuario: user,
+            departamento: departamento,
           ),
         ),
       );
@@ -120,12 +125,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     final doc = snapshot.docs.first;
+    final data = doc.data();
+    final departamento = data['departamento'] as String? ?? "";
+
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChangePasswordScreen(
+        builder: (context) => FirstTimePasswordScreen(
           usuarioDocId: doc.id,
+          usuario: user,
+          departamento: departamento, // Pasar departamento para redirigir al dashboard después de cambiar contraseña
         ),
       ),
     );
@@ -134,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

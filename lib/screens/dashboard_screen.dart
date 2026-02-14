@@ -4,15 +4,21 @@ import 'register_change_screen.dart';
 import 'change_history_screen.dart';
 import 'login_screen.dart';
 import 'package:intl/intl.dart';
+import 'register_device_screen.dart';
+import 'register_user_screen.dart';
+
+
 
 class DashboardScreen extends StatefulWidget {
   final bool isAdmin;
   final String usuario;
+  final String departamento;
 
   const DashboardScreen({
     super.key,
     required this.isAdmin,
     required this.usuario,
+    required this.departamento,
   });
 
   @override
@@ -22,358 +28,160 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final FirebaseFirestore db = FirebaseFirestore.instance;
 
-  // Obtener departamento por usuario
-  String _obtenerDepartamentoPorUsuario() {
-    if (widget.isAdmin) return "TODOS";
+  // ================= CALCULAR DÍAS RESTANTES =================
+  int calcularDiasRestantes(String fechaTexto) {
+    final DateFormat formato = DateFormat('dd/MM/yyyy');
 
-    switch (widget.usuario.toLowerCase()) {
-      case "montevideo":
-        return "Montevideo";
-      case "canelones":
-        return "Canelones";
-      case "maldonado":
-        return "Maldonado";
-      case "colonia":
-        return "Colonia";
-      case "salto":
-        return "Salto";
-      case "rocha":
-        return "Rocha";
-      case "lavalleja":
-        return "Lavalleja";
-      case "flores":
-        return "Flores";
-      case "florida":
-        return "Florida";
-      case "soriano":
-        return "Soriano";
-      case "durazno":
-        return "Durazno";
-      case "treinta y tres":
-        return "Treinta y Tres";
-      case "cerro largo":
-        return "Cerro Largo";
-      case "rivera":
-        return "Rivera";
-      case "tacuarembo":
-        return "Tacuarembó";
-      case "artigas":
-        return "Artigas";
-      case "rio negro":
-        return "Río Negro";
-      case "paysandu":
-        return "Paysandú";  
-        case "san jose":
-        return "San José";
-      default:
-        return "Desconocido";
-    }
+    final fechaProxima = formato.parse(fechaTexto);
+    final hoy = DateTime.now();
+
+    final hoyNormalizado = DateTime(hoy.year, hoy.month, hoy.day);
+    final fechaNormalizada =
+        DateTime(fechaProxima.year, fechaProxima.month, fechaProxima.day);
+
+    return fechaNormalizada.difference(hoyNormalizado).inDays;
   }
 
-  // Cerrar sesión
-  void _cerrarSesion(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Cerrar sesión"),
-        content: const Text("¿Estás seguro que deseas cerrar sesión?"),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            child: const Text("Cerrar sesión"),
-          ),
-        ],
-      ),
-    );
-  }
+  
+  
 
-  // ---------- ALTA DE DISPOSITIVO ----------
-  void _mostrarFormularioAlta(BuildContext context) async {
-    final TextEditingController localController = TextEditingController();
-    final TextEditingController ambienteController = TextEditingController();
-    final TextEditingController fechaAltaController = TextEditingController();
-    final TextEditingController proximaFechaController = TextEditingController();
-
-    String depto = widget.isAdmin ? "Montevideo" : _obtenerDepartamentoPorUsuario();
-    String siglas = _siglasDepartamento(depto);
-
-    String? selectedDepto = depto;
-
-    // Fecha de alta y próxima fecha automáticas
-    DateTime? fechaAlta;
-    DateTime? fechaProxima;
-
-    // Función para actualizar próxima fecha
-    void actualizarProximaFecha() {
-      if (fechaAlta != null) {
-        fechaProxima = fechaAlta!.add(const Duration(days: 30));
-        proximaFechaController.text = DateFormat('dd/MM/yyyy').format(fechaProxima!);
-      }
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          title: const Text("Alta de dispositivo"),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                // Dropdown de departamento si es admin
-                if (widget.isAdmin)
-                  DropdownButtonFormField<String>(
-                    value: selectedDepto,
-                    decoration: const InputDecoration(labelText: "Departamento"),
-                    items: [
-                      "Montevideo",
-                      "Canelones",
-                      "Maldonado",
-                      "Colonia",
-                      "Salto",
-                      "Rocha",
-                      "Lavalleja",
-                      "Flores",
-                      "Florida",
-                      "Soriano",
-                      "Durazno",
-                      "Treinta y Tres",
-                      "Cerro Largo",
-                      "Rivera",
-                      "Tacuarembó",
-                      "Artigas",
-                      "Río Negro",
-                      "Paysandú",
-                    ]
-                        .map((d) => DropdownMenuItem(value: d, child: Text(d)))
-                        .toList(),
-                    onChanged: (value) {
-                      setStateDialog(() {
-                        selectedDepto = value;
-                        siglas = _siglasDepartamento(selectedDepto!);
-                      });
-                    },
-                  ),
-                TextField(controller: localController, decoration: const InputDecoration(labelText: "Local")),
-                TextField(controller: ambienteController, decoration: const InputDecoration(labelText: "Ambiente")),
-                TextField(
-                  controller: fechaAltaController,
-                  decoration: const InputDecoration(labelText: "Fecha de alta (dd/MM/yyyy)"),
-                  readOnly: true,
-                  onTap: () async {
-                    DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setStateDialog(() {
-                        fechaAlta = picked;
-                        fechaAltaController.text = DateFormat('dd/MM/yyyy').format(fechaAlta!);
-                        actualizarProximaFecha();
-                      });
-                    }
-                  },
-                ),
-                TextField(
-                  controller: proximaFechaController,
-                  decoration: const InputDecoration(labelText: "Próxima fecha (automática)"),
-                  readOnly: true,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-            ElevatedButton(
-              onPressed: () async {
-                if (localController.text.isEmpty ||
-                    ambienteController.text.isEmpty ||
-                    fechaAlta == null ||
-                    selectedDepto == null) return;
-
-                // Obtener último número para ese departamento
-                QuerySnapshot query = await db
-                    .collection('dispositivos')
-                    .where('departamento', isEqualTo: selectedDepto)
-                    .get();
-
-                int maxNum = 0;
-                for (var doc in query.docs) {
-                  String codigo = doc['codigo'] ?? '';
-                  if (codigo.startsWith(siglas)) {
-                    int? num = int.tryParse(codigo.split('-')[1]);
-                    if (num != null && num > maxNum) maxNum = num;
-                  }
-                }
-
-                String codigoAutogenerado = '$siglas-${(maxNum + 1).toString().padLeft(3, '0')}';
-
-                await db.collection('dispositivos').doc(codigoAutogenerado).set({
-                  'codigo': codigoAutogenerado,
-                  'departamento': selectedDepto,
-                  'local': localController.text,
-                  'ambiente': ambienteController.text,
-                  'fechaAlta': DateFormat('dd/MM/yyyy').format(fechaAlta!),
-                  'proximaFecha': DateFormat('dd/MM/yyyy').format(fechaProxima!),
-                  'diasRestantes': fechaProxima!.difference(fechaAlta!).inDays,
-                });
-
-                if (!mounted) return;
-                Navigator.pop(context);
-                setState(() {});
-              },
-              child: const Text("Agregar"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _siglasDepartamento(String depto) {
-    switch (depto.toLowerCase()) {
-      case 'montevideo':
-        return 'MVD';
-      case 'canelones':
-        return 'CNL';
-      case 'maldonado':
-        return 'MAL';
-      case 'colonia':
-        return 'COL';
-      case 'salto':
-        return 'SAL';
-      case 'rocha':
-        return 'ROC';
-      case 'lavalleja':
-        return 'LAV';
-      case 'flores':
-        return 'FLO';
-      case 'florida':
-        return 'FLD';
-      case 'soriano':
-        return 'SOR';
-      case 'durazno':
-        return 'DUR';
-      case 'treinta y tres':
-        return 'TRE';
-      case 'cerro largo':
-        return 'CER';
-      case 'rivera':
-        return 'RIV';
-      case 'tacuarembo':
-        return 'TAC';
-      case 'artigas':
-        return 'ART';
-      case 'río negro':
-        return 'RNE';
-      case 'paysandú':
-        return 'PAY';
-      default:
-        return 'XXX';
-    }
-  }
-
-  // ---------- STREAM DE DISPOSITIVOS ----------
+  // ================= STREAM FILTRADO =================
   Stream<QuerySnapshot> _dispositivosFiltradosStream() {
-    final depto = _obtenerDepartamentoPorUsuario();
+    final depto = widget.departamento;
     if (widget.isAdmin || depto == "TODOS") {
       return db.collection('dispositivos').snapshots();
     } else {
-      return db.collection('dispositivos').where('departamento', isEqualTo: depto).snapshots();
+      return db
+          .collection('dispositivos')
+          .where('departamento', isEqualTo: depto)
+          .snapshots();
     }
   }
 
+  // ================= CERRAR SESIÓN =================
+  void _cerrarSesion(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+    );
+  }
+
+  // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
-    final depto = _obtenerDepartamentoPorUsuario();
+    final depto = widget.departamento;
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.isAdmin ? "Panel Administrador - Todos los departamentos" : "Panel - $depto",
-                style: const TextStyle(fontSize: 16)),
-            Text("Conectado como: ${widget.usuario}", style: const TextStyle(fontSize: 12)),
+            Text(
+              widget.isAdmin
+                  ? "Panel Administrador - Todos los departamentos"
+                  : "Panel - $depto",
+              style: const TextStyle(fontSize: 16),
+            ),
+            Text(
+              "Conectado como: ${widget.usuario}",
+              style: const TextStyle(fontSize: 12),
+            ),
           ],
         ),
         backgroundColor: const Color(0xFF0B2B3C),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(icon: const Icon(Icons.logout), tooltip: "Cerrar sesión", onPressed: () => _cerrarSesion(context)),
-        ],
+        if (widget.isAdmin)
+        IconButton(
+        icon: const Icon(Icons.person_add),
+        tooltip: "Crear usuario",
+        onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const RegisterUserScreen(),
+            ),
+          );
+       },
       ),
+
+       IconButton(
+       icon: const Icon(Icons.logout),
+       onPressed: () => _cerrarSesion(context),
+       ),
+       ],
+         ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _dispositivosFiltradosStream(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.inbox_outlined, size: 60, color: Colors.grey),
-                    SizedBox(height: 12),
-                    Text(
-                      "No hay dispositivos asignados a este departamento.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
-                    ),
-                  ],
-                ),
-              ),
+              child: Text("No hay dispositivos registrados"),
             );
           }
 
           List docs = snapshot.data!.docs;
-          docs.sort((a, b) => (a['diasRestantes'] as int).compareTo(b['diasRestantes'] as int));
 
-          return ListView(
+          // ORDENAR POR DÍAS RESTANTES
+          docs.sort((a, b) {
+            final diasA = calcularDiasRestantes(a['proximaFecha']);
+            final diasB = calcularDiasRestantes(b['proximaFecha']);
+            return diasA.compareTo(diasB);
+          });
+
+          return ListView.builder(
             padding: const EdgeInsets.all(16),
-            children: docs.map((doc) {
-              final data = doc.data() as Map<String, dynamic>;
-              return Column(
-                children: [
-                  DeviceCard(
-                    codigo: data['codigo'],
-                    local: data['local'],
-                    ambiente: data['ambiente'],
-                    proximaFecha: data['proximaFecha'],
-                    diasRestantes: data['diasRestantes'],
-                    usuario: widget.usuario,
-                  ),
-                  const SizedBox(height: 12),
-                ],
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final dias =
+                  calcularDiasRestantes(data['proximaFecha'] ?? "01/01/2000");
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DeviceCard(
+                  codigo: data['codigo'] ?? '',
+                  local: data['local'] ?? '',
+                  ambiente: data['ambiente'] ?? '',
+                  proximaFecha: data['proximaFecha'] ?? '',
+                  diasRestantes: dias,
+                  usuario: widget.usuario,
+                  departamento: data['departamento'] ?? '',
+                ),
               );
-            }).toList(),
+            },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _mostrarFormularioAlta(context),
-        backgroundColor: const Color.fromARGB(255, 74, 183, 241),
-        tooltip: "Agregar dispositivo",
-        child: const Icon(Icons.add),
-      ),
+
+      floatingActionButton: widget.isAdmin
+    ? FloatingActionButton(
+        backgroundColor: const Color(0xFF0B2B3C),
+        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => RegisterDeviceScreen(
+                isAdmin: widget.isAdmin,
+                usuario: widget.usuario,
+              ),
+            ),
+          );
+        },
+      )
+    : null,
+
+
     );
   }
 }
 
-// ---------- DeviceCard con botón de baja ----------
+// ================= DEVICE CARD =================
 class DeviceCard extends StatelessWidget {
   final String codigo;
   final String local;
@@ -381,6 +189,7 @@ class DeviceCard extends StatelessWidget {
   final String proximaFecha;
   final int diasRestantes;
   final String usuario;
+  final String departamento;
 
   const DeviceCard({
     super.key,
@@ -390,27 +199,59 @@ class DeviceCard extends StatelessWidget {
     required this.proximaFecha,
     required this.diasRestantes,
     required this.usuario,
+    required this.departamento,
   });
 
   @override
   Widget build(BuildContext context) {
-    final Color estadoColor = diasRestantes <= 5 ? Colors.red : Colors.orange;
+    String textoEstado;
+    Color estadoColor;
+
+    if (diasRestantes > 10) {
+      textoEstado = "En $diasRestantes días";
+      estadoColor = Colors.green;
+    } else if (diasRestantes > 5) {
+      textoEstado = "En $diasRestantes días";
+      estadoColor = Colors.orange;
+    } else if (diasRestantes > 1) {
+      textoEstado = "En $diasRestantes días";
+      estadoColor = Colors.red;
+    } else if (diasRestantes == 1) {
+      textoEstado = "Mañana";
+      estadoColor = Colors.red;
+    } else if (diasRestantes == 0) {
+      textoEstado = "Hoy";
+      estadoColor = Colors.red.shade900;
+    } else {
+      textoEstado = "Atrasado ${diasRestantes.abs()} días";
+      estadoColor = Colors.red.shade900;
+    }
 
     return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text("$local — $ambiente", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text("Código: $codigo"),
-          Text("Próximo cambio: $proximaFecha"),
-          Text("En $diasRestantes días", style: TextStyle(color: estadoColor)),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: Row(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("$local — $ambiente",
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text("Código: $codigo"),
+            Text("Próximo cambio: $proximaFecha"),
+            const SizedBox(height: 4),
+            Text(
+              textoEstado,
+              style: TextStyle(
+                color: estadoColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
               children: [
                 Expanded(
                   child: ElevatedButton(
@@ -421,6 +262,7 @@ class DeviceCard extends StatelessWidget {
                           builder: (context) => RegisterChangeScreen(
                             codigo: codigo,
                             usuario: usuario,
+                            departamento: departamento,
                           ),
                         ),
                       );
@@ -431,49 +273,29 @@ class DeviceCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.history),
-                  tooltip: 'Ver historial',
                   onPressed: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ChangeHistoryScreen(codigo: codigo),
+                        builder: (context) =>
+                            ChangeHistoryScreen(codigo: codigo),
                       ),
                     );
                   },
                 ),
-                const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
-                  tooltip: 'Dar de baja',
                   onPressed: () async {
-                    bool confirm = false;
-                    confirm = await showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text("Confirmar baja"),
-                        content: Text("¿Seguro que deseas dar de baja el dispositivo $codigo?"),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text("Dar de baja"),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (confirm) {
-                      await FirebaseFirestore.instance.collection('dispositivos').doc(codigo).delete();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Dispositivo $codigo dado de baja")),
-                      );
-                    }
+                    await FirebaseFirestore.instance
+                        .collection('dispositivos')
+                        .doc(codigo)
+                        .delete();
                   },
                 ),
               ],
-            ),
-          ),
-        ]),
+            )
+          ],
+        ),
       ),
     );
   }

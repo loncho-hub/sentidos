@@ -6,11 +6,13 @@ import 'package:timezone/timezone.dart' as tz;
 class RegisterChangeScreen extends StatefulWidget {
   final String codigo; // Código del dispositivo
   final String usuario; // Usuario que registra
-
+  final String departamento; // Departamento del usuario
+  
   const RegisterChangeScreen({
     super.key,
     required this.codigo,
     required this.usuario,
+    required this.departamento,
   });
 
   @override
@@ -62,19 +64,20 @@ class _RegisterChangeScreenState extends State<RegisterChangeScreen> {
       'opcion': opcionSeleccionada,
       'detalle': detalleController.text,
       'usuario': widget.usuario, // Usuario real
+      'departamento': widget.departamento,
       'fechaId': fechaId,
       'numero': siguienteNumero,
     });
 
     // Actualizar el documento principal del dispositivo
     final proximaFecha = ahora.add(const Duration(days: 30));
-    final diasRestantes = proximaFecha.difference(ahora).inDays;
 
-    await dispositivoRef.update({
-      'proximaFecha': '${proximaFecha.day.toString().padLeft(2, '0')}/${proximaFecha.month.toString().padLeft(2, '0')}/${proximaFecha.year}',
-      'diasRestantes': diasRestantes,
-      'ultimaActualizacion': ahora.toIso8601String(), // opcional: para control interno
-    });
+ await dispositivoRef.update({
+  'proximaFecha':
+      '${proximaFecha.day.toString().padLeft(2, '0')}/${proximaFecha.month.toString().padLeft(2, '0')}/${proximaFecha.year}',
+  'ultimaActualizacion': ahora.toIso8601String(),
+  });
+
 
     if (!mounted) return;
     Navigator.pop(context); // Volver al dashboard

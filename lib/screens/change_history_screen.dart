@@ -56,8 +56,10 @@ class ChangeHistoryScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(height: 8),
-                      Text('Usuario: ${data['usuario']}'),
+                      Text('Usuario: ${data['usuario'] ?? 'No registrado'}'),
                       Text('Fecha y hora: ${data['fechaHora']}'),
+                      Text('Departamento: ${data['departamento'] ?? 'No registrado'}'),
+
                     ],
                   ),
                 ),

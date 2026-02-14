@@ -28,7 +28,7 @@ class AromaApp extends StatelessWidget {
             title: 'Sentidos | Aromatización Profesional',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color.fromARGB(255, 224, 243, 54),
+                seedColor: const Color.fromARGB(255, 231, 233, 216),
                 brightness: Brightness.light,
               ),
               scaffoldBackgroundColor: const Color.fromARGB(255, 223, 232, 245),
