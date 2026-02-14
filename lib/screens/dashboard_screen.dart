@@ -7,8 +7,6 @@ import 'package:intl/intl.dart';
 import 'register_device_screen.dart';
 import 'register_user_screen.dart';
 
-
-
 class DashboardScreen extends StatefulWidget {
   final bool isAdmin;
   final String usuario;
@@ -42,9 +40,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return fechaNormalizada.difference(hoyNormalizado).inDays;
   }
 
-  
-  
-
   // ================= STREAM FILTRADO =================
   Stream<QuerySnapshot> _dispositivosFiltradosStream() {
     final depto = widget.departamento;
@@ -58,12 +53,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // ================= CERRAR SESIÓN =================
-  void _cerrarSesion(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+  // ================= CERRAR SESIÓN CON CONFIRMACIÓN =================
+  void _cerrarSesion(BuildContext context) async {
+    bool confirmar = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmar cierre de sesión"),
+        content: const Text(
+            "¿Estás seguro de que quieres cerrar sesión?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text(
+              "Cerrar sesión",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
     );
+
+    if (confirmar == true) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
   }
 
   // ================= BUILD =================
@@ -88,29 +107,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        backgroundColor: const Color(0xFF0B2B3C),
+        backgroundColor: const Color(0xFF28282B),
         foregroundColor: Colors.white,
         actions: [
-        if (widget.isAdmin)
-        IconButton(
-        icon: const Icon(Icons.person_add),
-        tooltip: "Crear usuario",
-        onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const RegisterUserScreen(),
+          if (widget.isAdmin)
+            IconButton(
+              icon: const Icon(Icons.person_add),
+              tooltip: "Crear usuario",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterUserScreen(),
+                  ),
+                );
+              },
             ),
-          );
-       },
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => _cerrarSesion(context),
+          ),
+        ],
       ),
-
-       IconButton(
-       icon: const Icon(Icons.logout),
-       onPressed: () => _cerrarSesion(context),
-       ),
-       ],
-         ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _dispositivosFiltradosStream(),
         builder: (context, snapshot) {
@@ -157,10 +175,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
-
-      floatingActionButton: widget.isAdmin
-    ? FloatingActionButton(
-        backgroundColor: const Color(0xFF0B2B3C),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF28282B),
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () {
           Navigator.push(
@@ -173,10 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           );
         },
-      )
-    : null,
-
-
+      ),
     );
   }
 }
@@ -230,7 +243,9 @@ class DeviceCard extends StatelessWidget {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: Color(0xFF28282B), width: 1), // borde negro
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -267,6 +282,9 @@ class DeviceCard extends StatelessWidget {
                         ),
                       );
                     },
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.black, // texto negro
+                    ),
                     child: const Text("Registrar cambio"),
                   ),
                 ),
@@ -286,10 +304,34 @@ class DeviceCard extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () async {
-                    await FirebaseFirestore.instance
-                        .collection('dispositivos')
-                        .doc(codigo)
-                        .delete();
+                    bool confirmar = await showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Confirmar eliminación"),
+                        content: const Text(
+                            "¿Estás seguro de que quieres dar de baja este dispositivo? Esta acción no se puede deshacer."),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text("Cancelar"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            child: const Text(
+                              "Eliminar",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirmar == true) {
+                      await FirebaseFirestore.instance
+                          .collection('dispositivos')
+                          .doc(codigo)
+                          .delete();
+                    }
                   },
                 ),
               ],

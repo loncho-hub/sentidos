@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:intl/intl.dart'; // Para parsear fechas
 
 class RegisterChangeScreen extends StatefulWidget {
   final String codigo; // Código del dispositivo
@@ -69,15 +70,38 @@ class _RegisterChangeScreenState extends State<RegisterChangeScreen> {
       'numero': siguienteNumero,
     });
 
-    // Actualizar el documento principal del dispositivo
-    final proximaFecha = ahora.add(const Duration(days: 30));
+    // ===== Lógica para actualizar la próxima fecha según motivo =====
+    final doc = await dispositivoRef.get();
+    DateTime nuevaProximaFecha;
 
- await dispositivoRef.update({
-  'proximaFecha':
-      '${proximaFecha.day.toString().padLeft(2, '0')}/${proximaFecha.month.toString().padLeft(2, '0')}/${proximaFecha.year}',
-  'ultimaActualizacion': ahora.toIso8601String(),
-  });
+    if (!doc.exists) return;
 
+    final proximaFechaStr = doc['proximaFecha'] as String?; // dd/MM/yyyy
+    DateTime proximaFechaActual;
+
+    if (proximaFechaStr != null && proximaFechaStr.isNotEmpty) {
+      proximaFechaActual = DateFormat('dd/MM/yyyy').parse(proximaFechaStr);
+    } else {
+      proximaFechaActual = ahora;
+    }
+
+    if (opcionSeleccionada!.toLowerCase() == 'reemplazo') {
+      // Reiniciar 30 días desde hoy
+      nuevaProximaFecha = ahora.add(const Duration(days: 30));
+    } else {
+      // Mantener los días restantes
+      int diasRestantes = proximaFechaActual.difference(ahora).inDays;
+      diasRestantes = diasRestantes > 0 ? diasRestantes : 30; // si ya pasó, contar 30 desde hoy
+      nuevaProximaFecha = ahora.add(Duration(days: diasRestantes));
+    }
+
+    // Actualizar documento principal
+    await dispositivoRef.update({
+      'proximaFecha':
+          '${nuevaProximaFecha.day.toString().padLeft(2, '0')}/${nuevaProximaFecha.month.toString().padLeft(2, '0')}/${nuevaProximaFecha.year}',
+      'ultimaActualizacion': ahora.toIso8601String(),
+      'ultimoMotivo': opcionSeleccionada,
+    });
 
     if (!mounted) return;
     Navigator.pop(context); // Volver al dashboard
@@ -95,17 +119,18 @@ class _RegisterChangeScreenState extends State<RegisterChangeScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: opciones.map((opcion) {
-                return RadioListTile<String>(
-                  title: Text(opcion),
-                  value: opcion,
-                  groupValue: opcionSeleccionada,
-                  onChanged: (value) {
-                    setState(() {
-                      opcionSeleccionada = value;
-                    });
-                  },
-                );
-              }).toList(),
+              return RadioListTile<String>(
+             title: Text(opcion),
+             value: opcion,
+             groupValue: opcionSeleccionada,
+             onChanged: (String? value) {
+              setState(() {
+          opcionSeleccionada = value;
+           });
+        },
+        );
+        }).toList(),
+
             ),
             const SizedBox(height: 16),
             TextField(

@@ -211,6 +211,16 @@ class _RegisterDeviceScreenState extends State<RegisterDeviceScreen> {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
+            TextField(
+              controller: localController,
+              decoration: const InputDecoration(
+                labelText: 'Local',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
             const SizedBox(height: 12),
 
             TextField(
@@ -220,15 +230,7 @@ class _RegisterDeviceScreenState extends State<RegisterDeviceScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 12),
-
-            TextField(
-              controller: localController,
-              decoration: const InputDecoration(
-                labelText: 'Local',
-                border: OutlineInputBorder(),
-              ),
-            ),
+            
 
             const SizedBox(height: 20),
 
